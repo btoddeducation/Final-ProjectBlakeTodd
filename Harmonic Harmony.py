@@ -10,6 +10,9 @@ class MusicPlayer:
         self.root = root
         self.current_music = None
         self.paused = False  # Add paused attribute
+        
+        # Initialize pygame mixer
+        pygame.mixer.init()
 
         self.music_frame = ttk.Frame(root)
         self.music_frame.pack(padx=10, pady=10)
@@ -40,6 +43,13 @@ class MusicPlayer:
         self.stop_button = ttk.Button(self.music_frame, image=self.stop_icon, command=self.stop_music, text="Stop")
         self.stop_button.pack(side=tk.LEFT, padx=5)
         self.stop_button.image = self.stop_icon  # Keep reference to the image
+        
+        # Volume control
+        self.volume_label = ttk.Label(self.music_frame, text="Volume:")
+        self.volume_label.pack(side=tk.LEFT, padx=5)
+        self.volume_scale = ttk.Scale(self.music_frame, from_=0, to=1, orient=tk.HORIZONTAL, command=self.set_volume)
+        self.volume_scale.set(pygame.mixer.music.get_volume())  # Set initial volume to current volume
+        self.volume_scale.pack(side=tk.LEFT, padx=5)
 
         # Add Music button
         self.add_music_button = ttk.Button(self.music_frame, text="Add Music", command=self.add_music)
@@ -59,9 +69,6 @@ class MusicPlayer:
         self.playlist = []
         self.current_index = 0
         self.paused = False
-
-        # Initialize pygame mixer
-        pygame.mixer.init()
 
     def add_music(self):
         music_files = filedialog.askopenfilenames(filetypes=[("Music Files", "*.mp3")])
@@ -97,6 +104,11 @@ class MusicPlayer:
                     self.play_button.config(image=self.pause_icon, text="Pause")  # Change button image and label to pause
         else:
             print("Playlist is empty.")
+            
+    
+    def set_volume(self, volume):
+        volume_level = float(volume)
+        pygame.mixer.music.set_volume(volume_level)
 
 
     def stop_music(self):
