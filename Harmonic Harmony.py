@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 import pygame
+from mutagen.mp3 import MP3
 from tkcalendar import Calendar
 
 class MusicPlayer:
@@ -24,6 +25,9 @@ class MusicPlayer:
 
         self.add_button = ttk.Button(self.music_frame, text="Add Music", command=self.add_music)
         self.add_button.pack(pady=5)
+
+        self.playlist_button = ttk.Button(self.music_frame, text="Playlist", command=self.show_playlist)
+        self.playlist_button.pack(pady=5)
 
         self.progress_label = ttk.Label(self.music_frame, text="Progress: ")
         self.progress_label.pack(pady=5)
@@ -62,8 +66,8 @@ class MusicPlayer:
         self.paused = True
 
     def add_music(self):
-        music_file = filedialog.askopenfilename(filetypes=[("Music Files", "*.mp3")])
-        if music_file:
+        music_files = filedialog.askopenfilenames(filetypes=[("Music Files", "*.mp3")])
+        for music_file in music_files:
             self.playlist.append(music_file)
             if not self.current_music:
                 self.play_button.config(state="normal")
@@ -85,6 +89,26 @@ class MusicPlayer:
             self.total_length_label.config(text="Total Length: ")
             self.music_slider.config(to=100)
             self.progress_label.config(text="Progress: ")
+
+    def show_playlist(self):
+        if self.playlist:
+            for index, music in enumerate(self.playlist, start=1):
+                print(f"{index}. {music}")
+        else:
+            print("Playlist is empty.")
+
+    def load_metadata(self, music_file):
+        try:
+            audio = MP3(music_file)
+            return {
+                'title': audio['TIT2'].text[0] if 'TIT2' in audio else "Unknown Title",
+                'artist': audio['TPE1'].text[0] if 'TPE1' in audio else "Unknown Artist",
+                'album': audio['TALB'].text[0] if 'TALB' in audio else "Unknown Album",
+                'duration': round(audio.info.length, 2)
+            }
+        except Exception as e:
+            print(f"Error loading metadata: {e}")
+            return None
 
 class CalendarApp:
     def __init__(self, root):
