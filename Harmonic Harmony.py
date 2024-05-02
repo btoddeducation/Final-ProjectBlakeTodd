@@ -1,12 +1,15 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 import pygame
 from mutagen.mp3 import MP3
 from tkcalendar import Calendar
+from datetime import datetime, timedelta
 
 class MusicPlayer:
     def __init__(self, root):
         self.root = root
+        self.current_music = None
+        self.paused = False  # Add paused attribute
 
         self.music_frame = ttk.Frame(root)
         self.music_frame.pack(padx=10, pady=10)
@@ -14,105 +17,134 @@ class MusicPlayer:
         self.music_label = ttk.Label(self.music_frame, text="Music Player")
         self.music_label.pack(pady=10)
 
-        self.play_button = ttk.Button(self.music_frame, text="Play Music", command=self.toggle_music)
-        self.play_button.pack(pady=5)
+        # Create custom image buttons
+        self.play_icon = tk.PhotoImage(file="play_icon.png")
+        self.pause_icon = tk.PhotoImage(file="pause_icon.png")
+        self.stop_icon = tk.PhotoImage(file="stop_icon.png")
+        self.prev_icon = tk.PhotoImage(file="prev_icon.png")
+        self.next_icon = tk.PhotoImage(file="next_icon.png")
 
-        self.stop_button = ttk.Button(self.music_frame, text="Stop Music", command=self.stop_music)
-        self.stop_button.pack(pady=5)
+        # Buttons with custom images and labels
+        self.play_button = ttk.Button(self.music_frame, image=self.play_icon, command=self.toggle_music, text="Play/Pause")
+        self.play_button.pack(side=tk.LEFT, padx=5)
+        self.play_button.image = self.play_icon  # Keep reference to the image
 
-        self.pause_button = ttk.Button(self.music_frame, text="Pause Music", command=self.pause_music)
-        self.pause_button.pack(pady=5)
+        self.prev_button = ttk.Button(self.music_frame, image=self.prev_icon, command=self.previous_music, text="Previous")
+        self.prev_button.pack(side=tk.LEFT, padx=5)
+        self.prev_button.image = self.prev_icon  # Keep reference to the image
 
-        self.add_button = ttk.Button(self.music_frame, text="Add Music", command=self.add_music)
-        self.add_button.pack(pady=5)
+        self.next_button = ttk.Button(self.music_frame, image=self.next_icon, command=self.next_music, text="Next")
+        self.next_button.pack(side=tk.LEFT, padx=5)
+        self.next_button.image = self.next_icon  # Keep reference to the image
 
-        self.playlist_button = ttk.Button(self.music_frame, text="Playlist", command=self.show_playlist)
-        self.playlist_button.pack(pady=5)
+        self.stop_button = ttk.Button(self.music_frame, image=self.stop_icon, command=self.stop_music, text="Stop")
+        self.stop_button.pack(side=tk.LEFT, padx=5)
+        self.stop_button.image = self.stop_icon  # Keep reference to the image
 
-        self.progress_label = ttk.Label(self.music_frame, text="Progress: ")
-        self.progress_label.pack(pady=5)
+        # Add Music button
+        self.add_music_button = ttk.Button(self.music_frame, text="Add Music", command=self.add_music)
+        self.add_music_button.pack(side=tk.LEFT, padx=5)
 
-        self.music_slider = ttk.Scale(self.music_frame, from_=0, to=100, orient=tk.HORIZONTAL, command=self.set_music_position)
-        self.music_slider.pack(pady=5)
+        # Remove Music button
+        self.remove_music_button = ttk.Button(self.music_frame, text="Remove Music", command=self.remove_music)
+        self.remove_music_button.pack(side=tk.LEFT, padx=5)
 
-        self.total_length_label = ttk.Label(self.music_frame, text="Total Length: ")
-        self.total_length_label.pack(pady=5)
+        # Playlist display
+        self.playlist_label = ttk.Label(self.music_frame, text="Playlist:")
+        self.playlist_label.pack(pady=5)
+
+        self.playlist_text = tk.Listbox(self.music_frame, width=50, height=10, selectmode=tk.SINGLE)
+        self.playlist_text.pack(pady=5)
 
         self.playlist = []
-        self.current_music = None
+        self.current_index = 0
         self.paused = False
 
         # Initialize pygame mixer
         pygame.mixer.init()
 
-    def toggle_music(self):
-        if self.paused:
-            pygame.mixer.music.unpause()
-            self.paused = False
-        elif self.current_music:
-            pygame.mixer.music.load(self.current_music)
-            pygame.mixer.music.play()
-        elif self.playlist:
-            self.current_music = self.playlist[0]
-            pygame.mixer.music.load(self.current_music)
-            pygame.mixer.music.play()
-
-    def stop_music(self):
-        pygame.mixer.music.stop()
-        self.current_music = None
-
-    def pause_music(self):
-        pygame.mixer.music.pause()
-        self.paused = True
-
     def add_music(self):
         music_files = filedialog.askopenfilenames(filetypes=[("Music Files", "*.mp3")])
         for music_file in music_files:
             self.playlist.append(music_file)
-            if not self.current_music:
-                self.play_button.config(state="normal")
-            self.update_music_info()
+            # Extracting the song title from the file path
+            song_title = music_file.split("/")[-1]  # Assuming Unix-like path separator
+            self.playlist_text.insert(tk.END, song_title)
 
-    def set_music_position(self, value):
-        if self.current_music:
-            slider_value = float(value)
-            total_length = pygame.mixer.Sound(self.current_music).get_length()
-            pygame.mixer.music.set_pos(slider_value * total_length / 100)
+    def remove_music(self):
+        selection = self.playlist_text.curselection()
+        if selection:
+            index = selection[0]
+            self.playlist.pop(index)
+            self.playlist_text.delete(index)
 
-    def update_music_info(self):
-        if self.current_music:
-            total_length = pygame.mixer.Sound(self.current_music).get_length()
-            self.total_length_label.config(text=f"Total Length: {total_length}")
-            self.music_slider.config(to=total_length)
-            self.progress_label.config(text="Progress: ")
-        else:
-            self.total_length_label.config(text="Total Length: ")
-            self.music_slider.config(to=100)
-            self.progress_label.config(text="Progress: ")
-
-    def show_playlist(self):
+    def toggle_music(self):
         if self.playlist:
-            for index, music in enumerate(self.playlist, start=1):
-                print(f"{index}. {music}")
+            if pygame.mixer.music.get_busy():  # Check if music is currently playing
+                if self.paused:
+                    pygame.mixer.music.unpause()  # Unpause the music
+                    self.paused = False
+                    self.play_button.config(image=self.pause_icon, text="Pause")  # Change button image and label to pause
+                else:
+                    pygame.mixer.music.pause()  # Pause the music
+                    self.paused = True
+                    self.play_button.config(image=self.play_icon, text="Play")  # Change button image and label to play
+            else:  # If music is not playing, start playing from the current index
+                if self.current_index < len(self.playlist):
+                    self.current_music = self.playlist[self.current_index]
+                    pygame.mixer.music.load(self.current_music)
+                    pygame.mixer.music.play()
+                    self.play_button.config(image=self.pause_icon, text="Pause")  # Change button image and label to pause
         else:
             print("Playlist is empty.")
 
-    def load_metadata(self, music_file):
-        try:
-            audio = MP3(music_file)
-            return {
-                'title': audio['TIT2'].text[0] if 'TIT2' in audio else "Unknown Title",
-                'artist': audio['TPE1'].text[0] if 'TPE1' in audio else "Unknown Artist",
-                'album': audio['TALB'].text[0] if 'TALB' in audio else "Unknown Album",
-                'duration': round(audio.info.length, 2)
-            }
-        except Exception as e:
-            print(f"Error loading metadata: {e}")
-            return None
+
+    def stop_music(self):
+        pygame.mixer.music.stop()
+        self.current_music = None
+        self.paused = False
+        self.play_button.config(image=self.play_icon)  # Change button image to play
+
+    def show_metadata(self):
+        selection = self.playlist_text.curselection()
+        if selection:
+            index = selection[0]
+            music_file = self.playlist[index]
+            try:
+                audio = MP3(music_file)
+                # Display metadata in a separate window
+                metadata_window = tk.Toplevel(self.root)
+                metadata_window.title("Metadata")
+                metadata_text = f"Title: {audio.get('title', 'Unknown Title')}\n" \
+                                f"Artist: {audio.get('artist', 'Unknown Artist')}\n" \
+                                f"Album: {audio.get('album', 'Unknown Album')}\n" \
+                                f"Duration: {round(audio.info.length, 2)} seconds"
+                ttk.Label(metadata_window, text=metadata_text).pack(padx=10, pady=10)
+            except Exception as e:
+                messagebox.showerror("Error", f"Error loading metadata: {e}")
+
+    def previous_music(self):
+        if self.current_index > 0:
+            self.current_index -= 1
+            self.toggle_music()
+        else:
+            # Restart the current song if it's the first in the playlist
+            if self.current_music:
+                pygame.mixer.music.rewind()
+
+    def next_music(self):
+        if self.current_index < len(self.playlist) - 1:
+            self.current_index += 1
+            self.toggle_music()
+        else:
+            # If we are at the end of the playlist, loop back to the beginning
+            self.current_index = 0
+            self.toggle_music()
 
 class CalendarApp:
     def __init__(self, root):
         self.root = root
+        self.appointments = {}  # Dictionary to store appointments
 
         self.calendar_frame = ttk.Frame(root)
         self.calendar_frame.pack(padx=10, pady=10)
@@ -120,13 +152,96 @@ class CalendarApp:
         self.calendar_label = ttk.Label(self.calendar_frame, text="Calendar")
         self.calendar_label.pack(pady=10)
 
-        self.calendar = Calendar(self.calendar_frame, selectmode="day")
+        self.calendar = Calendar(self.calendar_frame, selectmode="day", date_pattern="mm/dd/yy")
         self.calendar.pack(pady=10)
+
+        self.notes_label = ttk.Label(self.calendar_frame, text="Notes:")
+        self.notes_label.pack(pady=5)
+
+        self.notes_entry = ttk.Entry(self.calendar_frame, width=50)
+        self.notes_entry.pack(pady=5)
+
+        self.add_appointment_button = ttk.Button(self.calendar_frame, text="Add Appointment", command=self.add_appointment)
+        self.add_appointment_button.pack(pady=5)
+
+        self.remove_appointment_button = ttk.Button(self.calendar_frame, text="Remove Appointment", command=self.remove_appointment)
+        self.remove_appointment_button.pack(pady=5)
+
+        self.calendar.bind("<<CalendarSelected>>", self.display_appointment_details)
+
+    def add_appointment(self):
+        selected_date_str = self.calendar.get_date()
+        notes = self.notes_entry.get()
+        if selected_date_str:
+            selected_date = datetime.strptime(selected_date_str, '%m/%d/%y').date()
+            if selected_date not in self.appointments:
+                self.appointments[selected_date] = []  # Initialize list for the date if not exists
+            self.appointments[selected_date].append(notes)  # Add notes to the list for the date
+            print("Appointment saved successfully!")
+            self.update_calendar_text(selected_date)
+            self.clear_notes_entry()
+
+    def remove_appointment(self):
+        selected_date_str = self.calendar.get_date()
+        notes = self.notes_entry.get()
+        if selected_date_str:
+            selected_date = datetime.strptime(selected_date_str, '%m/%d/%y').date()
+            if selected_date in self.appointments and notes in self.appointments[selected_date]:
+                self.appointments[selected_date].remove(notes)
+                print("Appointment removed successfully!")
+                self.update_calendar_text(selected_date)
+            else:
+                print("Appointment not found for removal.")
+
+    def display_appointment_details(self, event):
+        selected_date_str = self.calendar.get_date()
+        if selected_date_str:
+            selected_date = datetime.strptime(selected_date_str, '%m/%d/%y').date()
+            if selected_date in self.appointments:
+                appointment_text = "\n".join(str(i + 1) + ". " + note for i, note in enumerate(self.appointments[selected_date]))
+                self.notes_entry.delete(0, tk.END)
+                self.notes_entry.insert(tk.END, appointment_text)
+
+    def update_calendar_text(self, date):
+        if hasattr(self.calendar, '_calevent_dates'):
+            # Check if the selected date is within the displayed range
+            display_range = self.calendar.get_displayed_month()
+            if isinstance(display_range, tuple) and len(display_range) == 2:
+                month, year = display_range  # Extract month and year from the tuple
+                first_day = datetime(year, month, 1).date()
+                last_day = (datetime(year, month, 1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+                if isinstance(date, datetime):  # Ensure date is a datetime.date object
+                    date = date.date()
+
+                if first_day <= date <= last_day:
+                    # Get the day of the week for the selected date
+                    day = date.weekday()
+
+                    # Get the date button widget corresponding to the selected date
+                    if date in self.calendar._calevent_dates:
+                        date_button = self.calendar._calendar[(date.day - 1) + day][0]
+
+                        # Concatenate appointment text for the same date
+                        if date in self.appointments:
+                            appointment_text = "\n".join(str(i + 1) + ". " + note for i, note in enumerate(self.appointments[date]))
+                            date_button.config(text=f"{date.day}\n{appointment_text}", foreground="blue")
+                        else:
+                            date_button.config(text=f"{date.day}", foreground="black")
+                else:
+                    print("Selected date is not in the displayed calendar range.")
+            else:
+                print("Display range is not valid.")
+
+    def clear_notes_entry(self):
+        self.notes_entry.delete(0, tk.END)
+
+
 
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("Integrated App")
+        self.root.title("Harmonic Harmony")
 
         self.tabControl = ttk.Notebook(root)
 
@@ -141,6 +256,10 @@ class App:
         self.music_player = MusicPlayer(self.music_tab)
         self.calendar_app = CalendarApp(self.calendar_tab)
 
-root = tk.Tk()
-app = App(root)
-root.mainloop()
+
+try:
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
+except Exception as e:
+    print("An error occurred:", e)
