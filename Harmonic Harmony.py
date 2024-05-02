@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pygame
 from mutagen.mp3 import MP3
-from tkcalendar import Calendar
 from datetime import datetime, timedelta
+from datetime import date as dt_date
+from tkcalendar import Calendar
+
 
 class MusicPlayer:
     def __init__(self, root):
@@ -188,31 +190,40 @@ class CalendarApp:
             selected_date = datetime.strptime(selected_date_str, '%m/%d/%y').date()
             if selected_date not in self.appointments:
                 self.appointments[selected_date] = []  # Initialize list for the date if not exists
-            self.appointments[selected_date].append(notes)  # Add notes to the list for the date
+            # Remove numbering prefix from notes
+            stripped_notes = notes.split(". ", 1)[-1]
+            self.appointments[selected_date].append(stripped_notes)  # Add notes to the list for the date
             print("Appointment saved successfully!")
             self.update_calendar_text(selected_date)
             self.clear_notes_entry()
 
+
     def remove_appointment(self):
         selected_date_str = self.calendar.get_date()
         notes = self.notes_entry.get()
+        print("Selected Date:", selected_date_str)
+        print("Notes:", notes)
         if selected_date_str:
             selected_date = datetime.strptime(selected_date_str, '%m/%d/%y').date()
-            if selected_date in self.appointments and notes in self.appointments[selected_date]:
-                self.appointments[selected_date].remove(notes)
+            print("Appointments for Selected Date:", self.appointments.get(selected_date))
+            stripped_notes = notes.split(". ", 1)[-1]  # Remove the prefix "1. " from notes
+            if selected_date in self.appointments and stripped_notes in self.appointments[selected_date]:
+                self.appointments[selected_date].remove(stripped_notes)
                 print("Appointment removed successfully!")
                 self.update_calendar_text(selected_date)
             else:
                 print("Appointment not found for removal.")
 
+
     def display_appointment_details(self, event):
         selected_date_str = self.calendar.get_date()
         if selected_date_str:
             selected_date = datetime.strptime(selected_date_str, '%m/%d/%y').date()
+            appointment_text = ""
             if selected_date in self.appointments:
                 appointment_text = "\n".join(str(i + 1) + ". " + note for i, note in enumerate(self.appointments[selected_date]))
-                self.notes_entry.delete(0, tk.END)
-                self.notes_entry.insert(tk.END, appointment_text)
+            self.notes_entry.delete(0, tk.END)
+            self.notes_entry.insert(tk.END, appointment_text)
 
     def update_calendar_text(self, date):
         if hasattr(self.calendar, '_calevent_dates'):
@@ -221,10 +232,10 @@ class CalendarApp:
             if isinstance(display_range, tuple) and len(display_range) == 2:
                 month, year = display_range  # Extract month and year from the tuple
                 first_day = datetime(year, month, 1).date()
-                last_day = (datetime(year, month, 1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+                last_day = (datetime(year, month, 1) + timedelta(days=32)).date() - timedelta(days=1)
 
-                if isinstance(date, datetime):  # Ensure date is a datetime.date object
-                    date = date.date()
+                if isinstance(date, dt_date):  # Ensure date is an instance of datetime.date
+                    date = date
 
                 if first_day <= date <= last_day:
                     # Get the day of the week for the selected date
@@ -244,6 +255,7 @@ class CalendarApp:
                     print("Selected date is not in the displayed calendar range.")
             else:
                 print("Display range is not valid.")
+
 
     def clear_notes_entry(self):
         self.notes_entry.delete(0, tk.END)
@@ -275,3 +287,4 @@ try:
     root.mainloop()
 except Exception as e:
     print("An error occurred:", e)
+
