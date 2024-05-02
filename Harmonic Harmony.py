@@ -71,6 +71,16 @@ class MusicPlayer:
         self.playlist = []
         self.current_index = 0
         self.paused = False
+        
+        # Metadata display
+        self.metadata_label = ttk.Label(self.music_frame, text="Metadata:")
+        self.metadata_label.pack(pady=5)
+
+        self.metadata_display = tk.Text(self.music_frame, width=50, height=5)
+        self.metadata_display.pack(pady=5)
+        
+        # Bind event handler for playlist selection change
+        self.playlist_text.bind("<<ListboxSelect>>", self.show_metadata)
 
     def add_music(self):
         music_files = filedialog.askopenfilenames(filetypes=[("Music Files", "*.mp3")])
@@ -119,24 +129,22 @@ class MusicPlayer:
         self.paused = False
         self.play_button.config(image=self.play_icon)  # Change button image to play
 
-    def show_metadata(self):
+    def show_metadata(self, event):
         selection = self.playlist_text.curselection()
         if selection:
             index = selection[0]
             music_file = self.playlist[index]
             try:
                 audio = MP3(music_file)
-                # Display metadata in a separate window
-                metadata_window = tk.Toplevel(self.root)
-                metadata_window.title("Metadata")
                 metadata_text = f"Title: {audio.get('title', 'Unknown Title')}\n" \
                                 f"Artist: {audio.get('artist', 'Unknown Artist')}\n" \
                                 f"Album: {audio.get('album', 'Unknown Album')}\n" \
                                 f"Duration: {round(audio.info.length, 2)} seconds"
-                ttk.Label(metadata_window, text=metadata_text).pack(padx=10, pady=10)
+                self.metadata_display.delete("1.0", tk.END)  # Clear previous metadata
+                self.metadata_display.insert(tk.END, metadata_text)
             except Exception as e:
                 messagebox.showerror("Error", f"Error loading metadata: {e}")
-
+                
     def previous_music(self):
         if self.current_index > 0:
             self.current_index -= 1
