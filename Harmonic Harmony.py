@@ -30,19 +30,19 @@ class MusicPlayer:
         self.next_icon = tk.PhotoImage(file="next_icon.png")
 
         # Buttons with custom images and labels
-        self.play_button = ttk.Button(self.music_frame, image=self.play_icon, command=self.toggle_music, text="Play/Pause")
+        self.play_button = ttk.Button(self.music_frame, image=self.play_icon, compound=tk.BOTTOM, command=self.toggle_music, text="Play/Pause")
         self.play_button.pack(side=tk.LEFT, padx=5)
         self.play_button.image = self.play_icon  # Keep reference to the image
 
-        self.prev_button = ttk.Button(self.music_frame, image=self.prev_icon, command=self.previous_music, text="Previous")
+        self.prev_button = ttk.Button(self.music_frame, image=self.prev_icon, compound=tk.BOTTOM, command=self.previous_music, text="Previous")
         self.prev_button.pack(side=tk.LEFT, padx=5)
         self.prev_button.image = self.prev_icon  # Keep reference to the image
 
-        self.next_button = ttk.Button(self.music_frame, image=self.next_icon, command=self.next_music, text="Next")
+        self.next_button = ttk.Button(self.music_frame, image=self.next_icon, compound=tk.BOTTOM, command=self.next_music, text="Next")
         self.next_button.pack(side=tk.LEFT, padx=5)
         self.next_button.image = self.next_icon  # Keep reference to the image
 
-        self.stop_button = ttk.Button(self.music_frame, image=self.stop_icon, command=self.stop_music, text="Stop")
+        self.stop_button = ttk.Button(self.music_frame, image=self.stop_icon, compound=tk.BOTTOM, command=self.stop_music, text="Stop")
         self.stop_button.pack(side=tk.LEFT, padx=5)
         self.stop_button.image = self.stop_icon  # Keep reference to the image
         
