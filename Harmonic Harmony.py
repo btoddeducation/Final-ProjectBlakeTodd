@@ -182,6 +182,9 @@ class CalendarApp:
         self.remove_appointment_button.pack(pady=5)
 
         self.calendar.bind("<<CalendarSelected>>", self.display_appointment_details)
+        
+        self.appointments_listbox = tk.Listbox(self.calendar_frame, width=50, height=10)
+        self.appointments_listbox.pack(pady=5)
 
     def add_appointment(self):
         selected_date_str = self.calendar.get_date()
@@ -224,6 +227,19 @@ class CalendarApp:
                 appointment_text = "\n".join(str(i + 1) + ". " + note for i, note in enumerate(self.appointments[selected_date]))
             self.notes_entry.delete(0, tk.END)
             self.notes_entry.insert(tk.END, appointment_text)
+            self.display_appointments_list(selected_date)
+
+    def display_appointments_list(self, selected_date):
+            self.appointments_listbox.delete(0, tk.END)  # Clear the listbox
+            if selected_date in self.appointments:
+                appointments = self.appointments[selected_date]
+                if appointments:
+                    for appointment in appointments:
+                        self.appointments_listbox.insert(tk.END, appointment)
+                else:
+                    self.appointments_listbox.insert(tk.END, "No appointments for this date")
+            else:
+                self.appointments_listbox.insert(tk.END, "No appointments for this date")
 
     def update_calendar_text(self, date):
         if hasattr(self.calendar, '_calevent_dates'):
