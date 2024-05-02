@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pygame
 from mutagen.mp3 import MP3
+from mutagen.id3 import ID3
 from datetime import datetime, timedelta
 from datetime import date as dt_date
 from tkcalendar import Calendar
@@ -81,6 +82,7 @@ class MusicPlayer:
         
         # Bind event handler for playlist selection change
         self.playlist_text.bind("<<ListboxSelect>>", self.show_metadata)
+        
 
     def add_music(self):
         music_files = filedialog.askopenfilenames(filetypes=[("Music Files", "*.mp3")])
@@ -135,11 +137,15 @@ class MusicPlayer:
             index = selection[0]
             music_file = self.playlist[index]
             try:
-                audio = MP3(music_file)
-                metadata_text = f"Title: {audio.get('title', 'Unknown Title')}\n" \
-                                f"Artist: {audio.get('artist', 'Unknown Artist')}\n" \
-                                f"Album: {audio.get('album', 'Unknown Album')}\n" \
-                                f"Duration: {round(audio.info.length, 2)} seconds"
+                audio = MP3(music_file, ID3=ID3)
+                title = audio.get('TIT2', ["Unknown Title"])[0]
+                artist = audio.get('TPE1', ["Unknown Artist"])[0]
+                album = audio.get('TALB', ["Unknown Album"])[0]
+                duration = round(audio.info.length, 2)
+                metadata_text = f"Title: {title}\n" \
+                                f"Artist: {artist}\n" \
+                                f"Album: {album}\n" \
+                                f"Duration: {duration} seconds"
                 self.metadata_display.delete("1.0", tk.END)  # Clear previous metadata
                 self.metadata_display.insert(tk.END, metadata_text)
             except Exception as e:
